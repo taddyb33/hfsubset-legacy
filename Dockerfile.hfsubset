@@ -1,0 +1,46 @@
+FROM rocker/geospatial:4.4.1
+
+WORKDIR /app
+
+# Tnstall Apache Arrow/build tools
+ENV HF_BUILD_PKGS="build-essential git"
+ENV HF_ARROW_PKGS="libarrow-dev libarrow-glib-dev libarrow-dataset-dev libarrow-dataset-glib-dev libarrow-flight-dev libarrow-flight-glib-dev libparquet-dev libparquet-glib-dev python3 python3-pip python3.10-venv"
+RUN apt update \
+    && apt install -y -V ca-certificates lsb-release wget \
+    && wget https://apache.jfrog.io/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+    && apt install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb \
+    && apt update \
+    && apt install -y -V ${HF_BUILD_PKGS} ${HF_ARROW_PKGS}
+
+
+# Install CRAN Packages
+ENV HF_CRAN_R_PKGS="arrow aws.s3 base64enc box DBI dplyr glue dbplyr lambdr logger nhdplusTools pak readr RSQLite sf"
+RUN . /etc/lsb-release \
+    && echo "options(ncpus = $(nproc --all))" >> .Rprofile \
+    && install2.r -r https://cloud.r-project.org/ \
+                  -e \
+                  -n 6 \
+                  -s \
+                  ${HF_CRAN_R_PKGS}
+
+ENV PYTHONPATH=/app:$PYTHONPATH
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Copy files and build the virtual env
+COPY src/ /app/src
+COPY gpkg/ /app/gpkg
+COPY hydrofabric/inst /app/hydrofabric
+COPY subset_network.R ./
+
+COPY requirements.txt ./
+COPY README.md ./
+
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install uv==0.2.5
+RUN uv venv
+ENV PATH="/app/.venv/bin:$PATH"
+RUN uv pip install --no-cache-dir -r requirements.txt
+
+# Make the shared volume 
+RUN mkdir /app/data
