@@ -1,9 +1,14 @@
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
-hfsubset
-*.gpkg
+# python generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
 
-terraform/.terraform
-terraform/.infracost
+# venv
+.venv
+
+# packge folders 
+gpkg/
+data/
