@@ -29,7 +29,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Copy files and build the virtual env
 COPY src/ /app/src
 COPY gpkg/ /app/gpkg
-COPY hydrofabric/inst /app/hydrofabric
+COPY hydrofabric_qml/inst /app/hydrofabric
 COPY subset_network.R ./
 
 COPY requirements.txt ./
