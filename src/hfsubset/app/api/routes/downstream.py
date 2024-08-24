@@ -45,7 +45,7 @@ async def generate_hf_downstream(
         try:
             # Call the R function
             _ = subset_network(
-                comid=feature_id,
+                comid=downstream_feature_id,
                 lyrs=StrVector(lyrs),
                 base_dir=base_dir,
                 outfile=downstream_file.__str__()

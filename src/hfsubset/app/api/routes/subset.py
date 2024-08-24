@@ -31,6 +31,7 @@ async def generate_hf_subset(
 
     if subset_file.exists():
         return Subset(
+                status=200,
                 message="Subset pulled from cache",
                 feature_id=feature_id,
                 layers=lyrs,
@@ -51,6 +52,7 @@ async def generate_hf_subset(
             # The R function might not return anything if it's just writing to a file
             # In this case, we'll just return a success message
             return Subset(
+                status=200,
                 message="Subset created successfully",
                 feature_id=feature_id,
                 layers=lyrs,
