@@ -5,8 +5,9 @@ from fastapi import APIRouter, Query, Depends, status
 from fastapi.responses import Response
 import rpy2.robjects as robjects
 from rpy2.robjects.vectors import StrVector
+import pandas as pd
 
-from src.hfsubset.app.schemas import Subset
+from src.hfsubset.app.schemas import DownstreamLinks
 from src.hfsubset.app.core import get_settings
 from src.hfsubset.app.core.settings import Settings
 from src.hfsubset.app.core.utils import find_repo_root
@@ -17,46 +18,47 @@ r = robjects.r
 r('source("/app/subset_network.R")')
 
 
-@router.get("/", response_model=Subset)
-async def generate_hf_subset(
+@router.get("/", response_model=DownstreamLinks)
+async def generate_hf_downstream(
     settings: Annotated[Settings, Depends(get_settings)],
     feature_id: int = Query(..., description="The COMID for the subset"),
+    downstream_feature_id: int = Query(..., description="The downstream LID to route until"),
     lyrs: List[str] = Query(["divides", "nexus", "flowpaths", "lakes", "flowpath_attributes", "network", "layer_styles"], description="The layers to include in the subset"),
 ):
-
     subset_network = r['subset_network']
     output_path = settings.subset_output_path
-    subset_file = output_path / f"{feature_id}/subset.gpkg"
+    downstream_file = output_path / f"{feature_id}/downstream.gpkg"
     base_dir: str = "gpkg/"    
 
-    if subset_file.exists():
-        return Subset(
-                message="Subset pulled from cache",
+    if downstream_file.exists():
+        return DownstreamLinks(
+                status=200,
+                message="Downstream geopackage retrieved from cache",
                 feature_id=feature_id,
+                downstream_feature_id=downstream_feature_id,
                 layers=lyrs,
-                output_file=subset_file.__str__()
+                output_file=downstream_file.__str__()
             )
     else:
-        print(subset_file.parent)
-        subset_file.parent.mkdir(exist_ok=True)
+        print(downstream_file.parent)
+        downstream_file.parent.mkdir(exist_ok=True)
         try:
             # Call the R function
             _ = subset_network(
                 comid=feature_id,
                 lyrs=StrVector(lyrs),
                 base_dir=base_dir,
-                outfile=subset_file.__str__()
+                outfile=downstream_file.__str__()
             )
-            
-            # The R function might not return anything if it's just writing to a file
-            # In this case, we'll just return a success message
-            return Subset(
-                message="Subset created successfully",
+            return DownstreamLinks(
+                status=200,
+                message="Downstream geopackage created successfully",
                 feature_id=feature_id,
+                downstream_feature_id=feature_id,
                 layers=lyrs,
-                output_file=subset_file.__str__()
+                output_file=downstream_file.__str__()
             )
         except Exception as e:
             # TODO make this specific
             print(e)
-            return {"error": str(e)}
+            return {"error": str(e), "status": 500}
