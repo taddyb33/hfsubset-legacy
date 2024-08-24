@@ -1,8 +1,9 @@
 services:
   app:
     build: 
-      context: .
-      dockerfile: Dockerfile.hfsubset
+      # context: .
+      # dockerfile: Dockerfile.hfsubset
+      image: ghcr.io/taddyb33/hfsubset-legacy:0.0.2
     ports:
       - "8008:8000"
     volumes:
